@@ -1,10 +1,11 @@
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { createContext } from "../test-utils/context.js";
 import {
 	createRequestUserInputTool,
+	NONINTERACTIVE_ENV_VAR,
 	registerRequestUserInputTool,
 	type RequestUserInputTool,
 } from "../src/request-user-input";
@@ -87,6 +88,10 @@ describe("request_user_input tool registration", () => {
 });
 
 describe("request_user_input execution", () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
 	test("returns a readable summary and structured details for an open-ended question", async () => {
 		const { pi, getTool } = createExtensionApi();
 		registerRequestUserInputTool(pi);
@@ -171,6 +176,42 @@ describe("request_user_input execution", () => {
 				ctx,
 			),
 		).rejects.toThrow("request_user_input requires UI support");
+	});
+
+	test("rejects a session whose host says no person can answer, without opening a dialog", async () => {
+		vi.stubEnv(NONINTERACTIVE_ENV_VAR, "1");
+		const tool = createRequestUserInputTool();
+		const input = vi.fn(async () => "answer");
+		const ctx = createContext({ ui: { input } });
+
+		await expect(
+			tool.execute(
+				"call-3b",
+				{ questions: [{ id: "notes", header: "Notes", question: "Any constraints?" }] },
+				undefined,
+				undefined,
+				ctx,
+			),
+		).rejects.toThrow("No person can answer questions in this session");
+		expect(input).not.toHaveBeenCalled();
+	});
+
+	test.each(["0", "true", ""])("opens the dialog when the non-interactive variable is %j", async (value) => {
+		vi.stubEnv(NONINTERACTIVE_ENV_VAR, value);
+		const tool = createRequestUserInputTool();
+		const input = vi.fn(async () => "answer");
+		const ctx = createContext({ ui: { input } });
+
+		const result = await tool.execute(
+			"call-3c",
+			{ questions: [{ id: "notes", header: "Notes", question: "Any constraints?" }] },
+			undefined,
+			undefined,
+			ctx,
+		);
+
+		expect(input).toHaveBeenCalledOnce();
+		expect(result.details.response.answers["notes"]?.answers).toEqual(["user_note: answer"]);
 	});
 
 	test("rejects an empty question id", async () => {

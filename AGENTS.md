@@ -11,7 +11,9 @@ commands, session persistence, or other agent behavior.
 - Questions with options use `ctx.ui.select`; open-ended questions and the
   `Other` branch use `ctx.ui.input`.
 - The tool requires UI support. Keep the `ctx.hasUI` guard and pass the tool's
-  abort signal to every dialog.
+  abort signal to every dialog. Pi assumes that RPC mode has a UI, but some
+  setups run Pi in RPC mode without one. `PI_REQUEST_USER_INPUT_NONINTERACTIVE=1`
+  makes the tool fail as if no UI were available in those setups.
 - Return answers in both the model-facing summary (`content`) and
   `details.response`; keep the answer map keyed by question id.
 - The tool is registered with `exposure: "model-only"` and

@@ -19,6 +19,17 @@ import type {
 
 export type { RequestUserInputQuestionResponse } from "./types";
 
+// Pi assumes that RPC mode has a UI. Hosts that run Pi in RPC mode without one set this to "1".
+export const NONINTERACTIVE_ENV_VAR = "PI_REQUEST_USER_INPUT_NONINTERACTIVE";
+
+const NO_UI_ERROR =
+	"request_user_input requires UI support. No person can answer questions in this session; " +
+	"continue without asking and state the assumptions you make.";
+
+function canAskUser(ctx: ExtensionContext): boolean {
+	return ctx.hasUI && process.env[NONINTERACTIVE_ENV_VAR] !== "1";
+}
+
 function createText(text: string) {
 	return new Text(text, 0, 0);
 }
@@ -260,8 +271,8 @@ export function createRequestUserInputTool(): RequestUserInputTool {
 			_onUpdate,
 			ctx,
 		): Promise<AgentToolResult<RequestUserInputDetails>> {
-			if (!ctx.hasUI) {
-				throw new Error("request_user_input requires UI support");
+			if (!canAskUser(ctx)) {
+				throw new Error(NO_UI_ERROR);
 			}
 
 			const normalized = normalizeRequestUserInputQuestions(params.questions);

@@ -63,6 +63,11 @@ A typical response is:
 - Pi with extension UI dialog support (`ctx.ui.input` and `ctx.ui.select`).
 - The tool fails with a clear error when the session has no UI support.
 
+Pi assumes that RPC mode (`--mode rpc`) has a UI, but some setups run Pi in
+RPC mode without one, such as a script that drives Pi. In that case, set
+`PI_REQUEST_USER_INPUT_NONINTERACTIVE=1`. The tool then fails as if no UI were
+available, and the error tells the model to continue without asking.
+
 ## Development
 
 ```bash
