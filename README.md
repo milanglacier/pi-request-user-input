@@ -120,4 +120,6 @@ npm run check
 ```
 
 `npm run check` runs the strict TypeScript type check and the full Vitest
-suite.
+suite. Integration tests load the extension through Pi and exercise its session
+lifecycle, tool activation, and commands without model calls. Rendering tests use
+Pi's tool-rendering component; focused unit tests use SDK-checked dialog doubles.

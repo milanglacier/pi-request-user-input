@@ -1,74 +1,59 @@
-import type { AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { initTheme, ToolExecutionComponent } from "@earendil-works/pi-coding-agent";
+import { TuiMainScreen, type Terminal } from "@earendil-works/pi-tui";
+import { stripVTControlCharacters } from "node:util";
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { createContext } from "../test-utils/context.js";
 import {
 	createRequestUserInputTool,
 	NONINTERACTIVE_ENV_VAR,
-	registerRequestUserInputTool,
-	type RequestUserInputTool,
 } from "../src/request-user-input";
-import { RequestUserInputSchema } from "../src/schemas";
+import { RequestUserInputSchema, type RequestUserInputParams } from "../src/schemas";
 import type { RequestUserInputDetails } from "../src/types";
 
-function createExtensionApi(): { pi: ExtensionAPI; getTool: () => RequestUserInputTool } {
-	let registered: RequestUserInputTool | undefined;
-	const pi = {
-		registerTool(tool: RequestUserInputTool) {
-			registered = tool;
-		},
-	} as unknown as ExtensionAPI;
-	return {
-		pi,
-		getTool() {
-			if (!registered) {
-				throw new Error("request_user_input was not registered");
-			}
-			return registered;
-		},
+function createRenderComponent(
+	args: RequestUserInputParams = {
+		questions: [{ id: "notes", header: "Notes", question: "Any constraints?" }],
+	},
+): ToolExecutionComponent {
+	const terminal: Terminal = {
+		columns: 120,
+		rows: 40,
+		kittyProtocolActive: false,
+		start() {},
+		stop() {},
+		drainInput: async () => {},
+		write() {},
+		moveBy() {},
+		hideCursor() {},
+		showCursor() {},
+		clearLine() {},
+		clearFromCursor() {},
+		clearScreen() {},
+		setTitle() {},
+		setProgress() {},
+		setProgramStatus() {},
 	};
+	const tool = createRequestUserInputTool();
+	return new ToolExecutionComponent(
+		tool.name,
+		"call-1",
+		args,
+		{},
+		tool,
+		new TuiMainScreen(terminal),
+		"/tmp",
+	);
 }
 
-function createTheme() {
-	const fg = vi.fn((_color: string, text: string) => text);
-	const bold = vi.fn((text: string) => text);
-	return {
-		theme: { fg, bold } as unknown as Theme,
-		fg,
-		bold,
-	};
+function renderText(component: ToolExecutionComponent, width = 120): string {
+	return stripVTControlCharacters(component.render(width).join("\n")).trim();
 }
 
-type RenderContext = Parameters<NonNullable<RequestUserInputTool["renderCall"]>>[2];
+describe("request_user_input tool definition", () => {
+	test("creates a model-only read-only tool with the expected metadata", () => {
+		const tool = createRequestUserInputTool();
 
-function renderContext(): RenderContext {
-	return {
-		args: { questions: [] },
-		toolCallId: "call-1",
-		invalidate: () => {},
-		lastComponent: undefined,
-		state: {},
-		cwd: "/tmp",
-		executionStarted: true,
-		argsComplete: true,
-		isPartial: false,
-		expanded: false,
-		showImages: false,
-		isError: false,
-		durationMs: undefined,
-		outputPad: 0,
-	};
-}
-
-describe("request_user_input tool registration", () => {
-	test("registers a model-only read-only tool with the expected metadata", () => {
-		const { pi, getTool } = createExtensionApi();
-
-		const returned = registerRequestUserInputTool(pi);
-		const tool = getTool();
-
-		expect(returned).toBe(tool);
 		expect(tool.name).toBe("request_user_input");
 		expect(tool.label).toBe("request_user_input");
 		expect(tool.description).toBe(
@@ -78,24 +63,19 @@ describe("request_user_input tool registration", () => {
 		expect(tool.exposure).toBe("model-only");
 		expect(tool.annotations).toEqual({ readOnlyHint: true });
 	});
-
-	test("createRequestUserInputTool returns the same registration contract without an API", () => {
-		const tool = createRequestUserInputTool();
-
-		expect(tool.name).toBe("request_user_input");
-		expect(tool.parameters).toBe(RequestUserInputSchema);
-	});
 });
 
 describe("request_user_input execution", () => {
+	beforeEach(() => {
+		vi.stubEnv(NONINTERACTIVE_ENV_VAR, undefined);
+	});
+
 	afterEach(() => {
 		vi.unstubAllEnvs();
 	});
 
 	test("returns a readable summary and structured details for an open-ended question", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 		const ctx = createContext({
 			ui: {
 				input: vi.fn(async () => "Ship in two phases"),
@@ -125,9 +105,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("returns Other plus the follow-up answer for a multiple-choice question", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 		const ctx = createContext({
 			ui: {
 				input: vi.fn(async () => "Bun"),
@@ -162,9 +140,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("rejects a session without UI support", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 		const ctx = createContext({ hasUI: false });
 
 		await expect(
@@ -215,9 +191,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("rejects an empty question id", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 
 		await expect(
 			tool.execute(
@@ -231,9 +205,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("rejects duplicate question ids", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 
 		await expect(
 			tool.execute(
@@ -252,9 +224,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("rejects a cancelled dialog", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 		const ctx = createContext({ ui: { input: vi.fn(async () => undefined) } });
 
 		await expect(
@@ -269,9 +239,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("reports an aborted call as aborted instead of cancelled", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 		const controller = new AbortController();
 		controller.abort();
 		const ctx = createContext({ ui: { input: vi.fn(async () => undefined) } });
@@ -288,9 +256,7 @@ describe("request_user_input execution", () => {
 	});
 
 	test("forwards the abort signal to every dialog", async () => {
-		const { pi, getTool } = createExtensionApi();
-		registerRequestUserInputTool(pi);
-		const tool = getTool();
+		const tool = createRequestUserInputTool();
 		const controller = new AbortController();
 		const ctx = createContext({
 			ui: {
@@ -328,51 +294,45 @@ describe("request_user_input execution", () => {
 });
 
 describe("request_user_input rendering", () => {
-	test("renders the question count in the call row", () => {
-		const tool = createRequestUserInputTool();
-		const { theme } = createTheme();
-		const component = tool.renderCall?.(
-			{
-				questions: [
-					{ id: "one", header: "One", question: "Q1" },
-					{ id: "two", header: "Two", question: "Q2" },
-				],
-			},
-			theme,
-			renderContext(),
-		);
+	beforeAll(() => {
+		initTheme("dark");
+	});
 
-		expect(component?.render(80).join("\n").trimEnd()).toBe("request_user_input 2 questions");
+	test("renders the question count in the call row", () => {
+		const component = createRenderComponent({
+			questions: [
+				{ id: "one", header: "One", question: "Q1" },
+				{ id: "two", header: "Two", question: "Q2" },
+			],
+		});
+
+		expect(renderText(component, 80)).toBe("request_user_input 2 questions");
 	});
 
 	test("renders singular question counts", () => {
-		const tool = createRequestUserInputTool();
-		const { theme } = createTheme();
-		const component = tool.renderCall?.(
-			{ questions: [{ id: "one", header: "One", question: "Q1" }] },
-			theme,
-			renderContext(),
-		);
+		const component = createRenderComponent({
+			questions: [{ id: "one", header: "One", question: "Q1" }],
+		});
 
-		expect(component?.render(80).join("\n").trimEnd()).toBe("request_user_input 1 question");
+		expect(renderText(component, 80)).toBe("request_user_input 1 question");
 	});
 
 	test("renders the partial state", () => {
-		const tool = createRequestUserInputTool();
-		const { theme } = createTheme();
-		const component = tool.renderResult?.(
-			{ content: [], details: { questions: [], response: { answers: {} } } },
-			{ expanded: false, isPartial: true },
-			theme,
-			renderContext(),
+		const component = createRenderComponent();
+		component.updateResult(
+			{
+				content: [],
+				details: { questions: [], response: { answers: {} } },
+				isError: false,
+			},
+			true,
 		);
 
-		expect(component?.render(80).join("\n").trimEnd()).toBe("Waiting for user input...");
+		expect(renderText(component)).toContain("Waiting for user input...");
 	});
 
 	test("renders answered questions with their answers", () => {
-		const tool = createRequestUserInputTool();
-		const { theme, fg } = createTheme();
+		const component = createRenderComponent();
 		const details: RequestUserInputDetails = {
 			questions: [
 				{ id: "runtime", header: "Runtime", question: "Which runtime?", options: [] },
@@ -385,41 +345,27 @@ describe("request_user_input rendering", () => {
 				},
 			},
 		};
-		const result: AgentToolResult<RequestUserInputDetails> = {
+		component.updateResult({
 			content: [{ type: "text", text: "summary" }],
 			details,
-		};
+			isError: false,
+		});
 
-		const component = tool.renderResult?.(
-			result,
-			{ expanded: false, isPartial: false },
-			theme,
-			renderContext(),
-		);
-
-		const text = component?.render(120).join("\n");
+		const text = renderText(component);
 		expect(text).toContain("1. Which runtime?");
 		expect(text).toContain("Answer: Node");
 		expect(text).toContain("2. Any constraints?");
 		expect(text).toContain("Answer: (no answer)");
-		expect(fg).toHaveBeenCalledWith("warning", "(no answer)");
 	});
 
-	test("falls back to the text content when details are missing", () => {
-		const tool = createRequestUserInputTool();
-		const { theme } = createTheme();
-		const result = {
+	test.each([undefined, {}])("falls back to text for an error with details %j", (details) => {
+		const component = createRenderComponent();
+		component.updateResult({
 			content: [{ type: "text", text: "fallback output" }],
-			details: undefined as unknown as RequestUserInputDetails,
-		} as AgentToolResult<RequestUserInputDetails>;
+			details,
+			isError: true,
+		});
 
-		const component = tool.renderResult?.(
-			result,
-			{ expanded: false, isPartial: false },
-			theme,
-			renderContext(),
-		);
-
-		expect(component?.render(80).join("\n").trimEnd()).toBe("fallback output");
+		expect(renderText(component)).toContain("fallback output");
 	});
 });

@@ -100,15 +100,15 @@ export function buildRequestUserInputResponse(
 	questions: NormalizedRequestUserInputQuestion[],
 	responses: RequestUserInputQuestionResponse[],
 ): RequestUserInputResponse {
-	const answers: Record<string, RequestUserInputAnswer> = {};
+	const answers: Array<[string, RequestUserInputAnswer]> = [];
 	for (const [index, question] of questions.entries()) {
 		const response = responses[index];
 		if (!response) {
 			throw new Error(`Missing response for request_user_input question: ${question.id}`);
 		}
-		answers[question.id] = buildRequestUserInputAnswer(question, response);
+		answers.push([question.id, buildRequestUserInputAnswer(question, response)]);
 	}
-	return { answers };
+	return { answers: Object.fromEntries(answers) };
 }
 
 export function summarizeRequestUserInputAnswer(answer: RequestUserInputAnswer | undefined): string {

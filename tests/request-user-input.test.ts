@@ -190,6 +190,35 @@ describe("buildRequestUserInputResponse", () => {
 		expect(response.answers["notes"]?.answers).toEqual(["user_note: Ship in two phases"]);
 	});
 
+	test("preserves prototype-named ids through JSON serialization", () => {
+		const questions = normalizeOrThrow(
+			["__proto__", "constructor", "toString"].map((id) => ({
+				id,
+				header: "Notes",
+				question: "Any constraints?",
+			})),
+		);
+		const response = buildRequestUserInputResponse(
+			questions,
+			questions.map(() => ({
+				selectedOptionIndex: 0,
+				customText: "Ship in phases",
+				selectionTouched: true,
+				committed: true,
+			})),
+		);
+		const restored: unknown = JSON.parse(JSON.stringify(response));
+
+		expect(Object.hasOwn(response.answers, "__proto__")).toBe(true);
+		expect(restored).toEqual({
+			answers: {
+				["__proto__"]: { answers: ["user_note: Ship in phases"] },
+				constructor: { answers: ["user_note: Ship in phases"] },
+				toString: { answers: ["user_note: Ship in phases"] },
+			},
+		});
+	});
+
 	test("rejects missing responses instead of silently dropping questions", () => {
 		const questions = normalizeOrThrow([{ id: "notes", header: "Notes", question: "Any constraints?" }]);
 
