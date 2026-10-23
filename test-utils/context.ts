@@ -1,4 +1,4 @@
-import type { ExtensionToolContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionCommandContext, ExtensionToolContext } from "@earendil-works/pi-coding-agent";
 import { ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -103,4 +103,17 @@ export function createContext(overrides: ContextOverrides = {}): TestContext {
 	// Theme access must be explicit; spreading a partial UI should not lose the rest of the contract.
 	Object.defineProperty(ui, "theme", { enumerable: false });
 	return ctx;
+}
+
+export function createCommandContext(overrides: ContextOverrides = {}): ExtensionCommandContext {
+	return {
+		...createContext(overrides),
+		getSystemPromptOptions: () => unsupported("getSystemPromptOptions"),
+		waitForIdle: async () => {},
+		newSession: async () => unsupported("newSession"),
+		fork: async () => unsupported("fork"),
+		navigateTree: async () => unsupported("navigateTree"),
+		switchSession: async () => unsupported("switchSession"),
+		reload: async () => unsupported("reload"),
+	};
 }

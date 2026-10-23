@@ -2,7 +2,8 @@
 
 Standalone Pi extension that registers the `request_user_input` tool. Keep the
 package focused on asking the user short questions; do not add unrelated
-commands, session persistence, or other agent behavior.
+commands, session persistence, or other agent behavior. The only command and
+flag control whether the tool is enabled.
 
 ## Tool contract
 
@@ -21,6 +22,19 @@ commands, session persistence, or other agent behavior.
 - `src/schemas.ts` is the model-facing input contract. Update it together with
   the README when the tool input changes.
 
+## Enabling and disabling
+
+- `src/settings.ts` resolves whether the tool is enabled. Precedence: the
+  `--request-user-input on|off` flag, then `.pi/request-user-input.json` in the
+  cwd (only when the project is trusted), then
+  `getAgentDir()/request-user-input.json`, then the default (enabled).
+- `src/toggle.ts` registers the flag and the `/request-user-input
+  [on|off|toggle]` command. The tool is always registered; enabling and
+  disabling add it to or remove it from the active tool set. Every
+  `session_start` applies the resolved setting again.
+- Report bad config or flag values with `ctx.ui.notify` warnings, never by
+  throwing, so a typo does not stop Pi from starting.
+
 ## Types and checks
 
 - Use the real Pi types from `@earendil-works/pi-*`. Do not add local SDK shims,
@@ -31,8 +45,8 @@ commands, session persistence, or other agent behavior.
 
 ## Packaging
 
-- `index.ts` is the extension entry point and only wires tool registration. Put
-  implementation in `src/`.
+- `index.ts` is the extension entry point and only wires the tool and the
+  toggle. Put implementation in `src/`.
 - The package ships raw TypeScript, which Pi loads through `pi.extensions`.
 - Keep the published `files` list limited to runtime sources and documentation.
 

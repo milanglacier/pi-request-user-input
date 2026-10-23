@@ -58,6 +58,50 @@ A typical response is:
    Answer: Node
 ```
 
+## Enabling and disabling the tool
+
+The tool is enabled by default. When it is disabled, Pi does not declare it to
+the model, so the model cannot call it.
+
+### Config file
+
+Set `enabled` in `request-user-input.json`:
+
+```json
+{
+  "enabled": false
+}
+```
+
+Pi reads the file from two places:
+
+- **Global:** `~/.pi/agent/request-user-input.json`, or
+  `$PI_CODING_AGENT_DIR/request-user-input.json` when that variable is set.
+- **Project:** `.pi/request-user-input.json` in the working directory. Pi reads
+  it only when the project is trusted.
+
+The project file overrides the global file. A missing file is ignored. If a file
+is malformed or `enabled` is not a boolean, pi shows a warning and ignores that
+file.
+
+### CLI flag
+
+`--request-user-input on|off` overrides both config files for the session:
+
+```bash
+pi --request-user-input off
+```
+
+### Slash command
+
+`/request-user-input [on|off|toggle]` enables, disables, or toggles the tool in
+the running session. Without an argument, it toggles. The change applies until
+the next session start, such as `/new`, `/resume`, or `/reload`. At each
+session start, the extension applies the CLI flag and config files again.
+
+If `--tools` leaves `request_user_input` out, the tool is not available in the
+session, and `/request-user-input on` shows a warning.
+
 ## Requirements
 
 - Pi with extension UI dialog support (`ctx.ui.input` and `ctx.ui.select`).

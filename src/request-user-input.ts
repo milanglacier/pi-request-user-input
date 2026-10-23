@@ -19,6 +19,8 @@ import type {
 
 export type { RequestUserInputQuestionResponse } from "./types";
 
+export const REQUEST_USER_INPUT_TOOL_NAME = "request_user_input";
+
 // Pi assumes that RPC mode has a UI. Hosts that run Pi in RPC mode without one set this to "1".
 export const NONINTERACTIVE_ENV_VAR = "PI_REQUEST_USER_INPUT_NONINTERACTIVE";
 
@@ -302,8 +304,8 @@ export function createRequestUserInputTool(): RequestUserInputTool {
 				details,
 			};
 		},
-		label: "request_user_input",
-		name: "request_user_input",
+		label: REQUEST_USER_INPUT_TOOL_NAME,
+		name: REQUEST_USER_INPUT_TOOL_NAME,
 		parameters: RequestUserInputSchema,
 		annotations: {
 			readOnlyHint: true,
