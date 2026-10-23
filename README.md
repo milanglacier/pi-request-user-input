@@ -1,10 +1,10 @@
 # `@milanglacier/pi-request-user-input`
 
-> Let the model ask you one to three short questions without enabling plan mode.
+> Let the model ask you one to three short questions.
 
-This extension registers the `request_user_input` tool. It was extracted from
-[`@milanglacier/pi-plan-mode`](https://github.com/milanglacier/pi-plan-mode) so
-that the tool remains available when plan mode is not installed or enabled.
+This extension registers the `request_user_input` tool. It gives the model a
+structured way to ask clarifying questions and wait for your answers before
+continuing.
 
 ## Installation
 
