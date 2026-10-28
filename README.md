@@ -25,8 +25,10 @@ question can be open-ended or include multiple-choice options:
 
 - **Open-ended:** pi shows a text input dialog.
 - **With options:** pi shows a select dialog with numbered options and an
-  `Other (type your own answer)` entry. Choosing `Other` opens a follow-up
-  text input.
+  `Other (type your own answer)` entry. Each option shows its label and
+  description on one line, such as `1. Node — Use Node.js APIs and tooling.`
+  The answer returned to the model contains only the label. Choosing `Other`
+  opens a follow-up text input.
 - **Cancellation:** cancelling a dialog cancels the whole tool call.
 
 Answers are returned to the model in a readable summary and in the tool result's

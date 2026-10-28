@@ -12,6 +12,7 @@ import type {
 	NormalizedRequestUserInputQuestion,
 	RequestUserInputAnswer,
 	RequestUserInputDetails,
+	RequestUserInputOption,
 	RequestUserInputQuestion,
 	RequestUserInputQuestionResponse,
 	RequestUserInputResponse,
@@ -156,6 +157,14 @@ export function buildRequestUserInputDialogTitle(question: NormalizedRequestUser
 	return `${header}\n${prompt || question.question}`;
 }
 
+// The select dialog takes plain strings, so the description has to go in the option text.
+// Collapsing whitespace keeps each option on one line in the selector.
+export function formatRequestUserInputOptionLabel(option: RequestUserInputOption, index: number): string {
+	const label = `${index + 1}. ${option.label}`;
+	const description = option.description.replace(/\s+/g, " ").trim();
+	return description ? `${label} — ${description}` : label;
+}
+
 function buildDialogOptions(signal: AbortSignal | undefined): ExtensionUIDialogOptions | undefined {
 	return signal ? { signal } : undefined;
 }
@@ -208,7 +217,7 @@ export async function collectSingleRequestUserInputAnswer(
 	}
 
 	const labels = [
-		...question.options.map((option, index) => `${index + 1}. ${option.label}`),
+		...question.options.map(formatRequestUserInputOptionLabel),
 		`${question.options.length + 1}. Other (type your own answer)`,
 	];
 	const selected = await requestSelectDialog(ctx, title, labels, signal);

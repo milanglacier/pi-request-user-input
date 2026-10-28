@@ -252,17 +252,67 @@ describe("collectRequestUserInputAnswers", () => {
 				],
 			},
 		]);
-		const ctx = createCtx({ select: ["2. Node"] });
+		const ctx = createCtx({ select: ["2. Node — Second Node"] });
+
+		const response = await collectRequestUserInputAnswers(ctx, questions);
+
+		expect(ctx.ui.select).toHaveBeenCalledWith("Runtime\nWhich runtime?", [
+			"1. Node — First Node",
+			"2. Node — Second Node",
+			"3. Other (type your own answer)",
+		]);
+		expect(ctx.ui.input).not.toHaveBeenCalled();
+		expect(response?.answers["runtime"]?.answers).toEqual(["Node"]);
+	});
+
+	test("shows option descriptions in the select list and returns the bare label", async () => {
+		const questions = normalizeOrThrow([
+			{
+				id: "db",
+				header: "Database",
+				question: "Which database?",
+				options: [
+					{ label: "SQLite", description: "Zero setup; weaker under concurrent writes." },
+					{ label: "Postgres", description: "Needs a server; production-grade." },
+				],
+			},
+		]);
+		const ctx = createCtx({ select: ["2. Postgres — Needs a server; production-grade."] });
+
+		const response = await collectRequestUserInputAnswers(ctx, questions);
+
+		expect(ctx.ui.select).toHaveBeenCalledWith("Database\nWhich database?", [
+			"1. SQLite — Zero setup; weaker under concurrent writes.",
+			"2. Postgres — Needs a server; production-grade.",
+			"3. Other (type your own answer)",
+		]);
+		expect(response?.answers["db"]?.answers).toEqual(["Postgres"]);
+	});
+
+	test("omits the separator for blank descriptions and keeps each option on one line", async () => {
+		const questions = normalizeOrThrow([
+			{
+				id: "runtime",
+				header: "Runtime",
+				question: "Which runtime?",
+				options: [
+					{ label: "Node", description: "" },
+					{ label: "Bun", description: "   " },
+					{ label: "Deno", description: "  Secure by default;\n  built-in tooling.  " },
+				],
+			},
+		]);
+		const ctx = createCtx({ select: ["3. Deno — Secure by default; built-in tooling."] });
 
 		const response = await collectRequestUserInputAnswers(ctx, questions);
 
 		expect(ctx.ui.select).toHaveBeenCalledWith("Runtime\nWhich runtime?", [
 			"1. Node",
-			"2. Node",
-			"3. Other (type your own answer)",
+			"2. Bun",
+			"3. Deno — Secure by default; built-in tooling.",
+			"4. Other (type your own answer)",
 		]);
-		expect(ctx.ui.input).not.toHaveBeenCalled();
-		expect(response?.answers["runtime"]?.answers).toEqual(["Node"]);
+		expect(response?.answers["runtime"]?.answers).toEqual(["Deno"]);
 	});
 
 	test("advertises freeform input on the Other option and collects the follow-up answer", async () => {
@@ -341,13 +391,13 @@ describe("collectRequestUserInputAnswers", () => {
 				options: [{ label: "Node", description: "Use Node" }],
 			},
 		]);
-		const ctx = createCtx({ input: ["Fast"], select: ["1. Node"] });
+		const ctx = createCtx({ input: ["Fast"], select: ["1. Node — Use Node"] });
 
 		const response = await collectRequestUserInputAnswers(ctx, questions);
 
 		expect(ctx.ui.input).toHaveBeenNthCalledWith(1, "Notes\nAny constraints?", "Any constraints?");
 		expect(ctx.ui.select).toHaveBeenNthCalledWith(1, "Runtime\nWhich runtime?", [
-			"1. Node",
+			"1. Node — Use Node",
 			"2. Other (type your own answer)",
 		]);
 		expect(response?.answers["notes"]?.answers).toEqual(["user_note: Fast"]);
@@ -373,7 +423,7 @@ describe("collectRequestUserInputAnswers", () => {
 		expect(ctx.ui.select).toHaveBeenNthCalledWith(
 			1,
 			"Runtime\nWhich runtime?",
-			["1. Node", "2. Other (type your own answer)"],
+			["1. Node — Use Node", "2. Other (type your own answer)"],
 			{ signal },
 		);
 		expect(ctx.ui.input).toHaveBeenNthCalledWith(2, "Runtime\nWhich runtime?\nOther answer", "Type your answer", {

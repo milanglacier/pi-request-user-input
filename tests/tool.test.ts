@@ -284,7 +284,7 @@ describe("request_user_input execution", () => {
 
 		expect(ctx.ui.select).toHaveBeenCalledWith(
 			"Runtime\nWhich runtime?",
-			["1. Node", "2. Other (type your own answer)"],
+			["1. Node — Use Node", "2. Other (type your own answer)"],
 			{ signal: controller.signal },
 		);
 		expect(ctx.ui.input).toHaveBeenCalledWith("Runtime\nWhich runtime?\nOther answer", "Type your answer", {
