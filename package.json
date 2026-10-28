@@ -1,6 +1,6 @@
 {
 	"name": "@milanglacier/pi-request-user-input",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "A pi extension that adds the request_user_input tool for asking the user short questions with optional multiple-choice answers.",
 	"keywords": [
 		"pi",
