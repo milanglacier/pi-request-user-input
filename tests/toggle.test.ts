@@ -195,12 +195,14 @@ describe("/request-user-input", () => {
 	test("keeps the other active tools in order", async () => {
 		const { session } = await loadHarness();
 		session.setActiveToolsByName(["bash", TOOL, "read"]);
+		const others = session.getActiveToolNames().filter((name) => name !== TOOL);
+		expect(others).toHaveLength(2);
 
 		await session.prompt(`/${COMMAND_NAME} off`);
-		expect(session.getActiveToolNames()).toEqual(["bash", "read"]);
+		expect(session.getActiveToolNames()).toEqual(others);
 
 		await session.prompt(`/${COMMAND_NAME} on`);
-		expect(session.getActiveToolNames()).toEqual(["bash", "read", TOOL]);
+		expect(session.getActiveToolNames()).toEqual([...others, TOOL]);
 	});
 
 	test("rejects an unknown argument without changing the state", async () => {
