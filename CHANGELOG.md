@@ -1,14 +1,21 @@
 # Changelog
 
-## Unreleased
+## [0.2.0] - 2026-10-28
 
-- Preserves answers for question IDs such as `__proto__` when tool results are serialized.
-- Adds `request-user-input.json` with an `enabled` setting, read from the global agent directory and the trusted project's `.pi` directory. The project file overrides the global one. The tool is enabled by default.
-- Adds the `--request-user-input on|off` CLI flag, which overrides the config files.
-- Adds the `/request-user-input [on|off|toggle]` command, which enables, disables, or toggles the tool in the running session.
-- Adds `PI_REQUEST_USER_INPUT_NONINTERACTIVE=1`, which makes the tool fail as if no UI were available. Use it when Pi runs in RPC mode without a UI.
+### Added
 
-## 0.1.0
+- `request-user-input.json` in the global agent directory or the trusted project's `.pi` directory enables or disables the tool. The project file overrides the global one.
+- The `--request-user-input on|off` flag overrides the config files.
+- The `/request-user-input [on|off|toggle]` command switches the tool in the running session.
+- `PI_REQUEST_USER_INPUT_NONINTERACTIVE=1` makes the tool fail as if no UI were available, for RPC hosts without a UI.
+- The select dialog shows option descriptions.
 
-- Initial release.
-- Adds the `request_user_input` tool for asking one to three short questions with optional multiple-choice answers and freeform "Other" responses.
+### Fixed
+
+- Answers to questions with IDs such as `__proto__` are kept when tool results are saved.
+
+## [0.1.0] - 2026-10-23
+
+### Added
+
+- Initial release. The `request_user_input` tool asks one to three short questions with optional multiple-choice answers and a freeform "Other" answer.
